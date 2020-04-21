@@ -171,6 +171,8 @@ class CEDriver(NetworkDriver):
 
         # obtain output from device
         show_ver = self.device.send_command('display version')
+        show_serial = self.device.send_command('display sn')
+        show_serial2 = self.device.send_command('display device manufacture-info')
         show_hostname = self.device.send_command('display current-configuration | inc sysname')
         show_int_status = self.device.send_command('display interface brief')
 
@@ -179,7 +181,7 @@ class CEDriver(NetworkDriver):
             if 'VRP (R) software' in line:
                 search_result = re.search(r"\((?P<serial_number>CE\S+)\s+(?P<os_version>V\S+)\)", line)
                 if search_result is not None:
-                    serial_number = search_result.group('serial_number')
+                    #serial_number = search_result.group('serial_number')
                     os_version = search_result.group('os_version')
 
             if 'HUAWEI' in line and 'uptime is' in line:
@@ -188,6 +190,19 @@ class CEDriver(NetworkDriver):
                     model = search_result.group(0)
                 uptime = self._parse_uptime(line)
                 break
+
+        for line in show_serial.splitlines():
+            if model in line:
+                search_result = re.search(rf"{model}\s+(?P<serial_number>[0-9]+\S+)\s+", line)
+                if search_result is not None:
+                    serial_number = search_result.group('serial_number')
+
+        if serial_number is "Unknown":
+            for line in show_serial2.splitlines():
+                if model in line:
+                    search_result = re.search(rf"{model}\s+(?P<serial_number>[0-9]+\S+)\s+", line)
+                    if search_result is not None:
+                        serial_number = search_result.group('serial_number')
 
         if 'sysname ' in show_hostname:
             _, hostname = show_hostname.split("sysname ")
@@ -722,6 +737,44 @@ class CEDriver(NetworkDriver):
             neighbor_dict = dict()
             neighbor_dict['port'] = py23_compat.text_type(neighbor[1])
             neighbor_dict['hostname'] = py23_compat.text_type(neighbor[2])
+            results[local_iface].append(neighbor_dict)
+        return results
+
+
+        def get_lldp_neighbors_details(self):
+            """
+            Return LLDP neighbors details.
+
+            Sample output:
+            Local Interface         Exptime(s) Neighbor Interface      Neighbor Device
+            -------------------------------------------------------------------------------
+            10GE1/0/1                     117  GigabitEthernet4/0/9    bitb_G20U41_usg6680_om_1
+            10GE1/0/2                      92  10GE1/0/1               bitb_G22U39_ce5850_manage_2
+            10GE1/0/3                     117  10GE1/0/48              bitb_G19U42_CE6851_bmccore_1
+            10GE1/0/4                      94  10GE1/0/15              tb-bier00d08u36nwswdwdm-1
+            GE1/0/2                       118  GigabitEthernet0/0/0    bitb_G19U23_usg6670_vpn_1
+            GE1/0/3                       117  GigabitEthernet0/0/0    bitb_G19U27_usg6680_nat_1
+            GE1/0/4                       102  GigabitEthernet0/0/0    bitb_G19U31_usg6680_pod1_1
+            GE1/0/5                       113  GigabitEthernet0/0/0    bitb_G19U35_usg6680_dmz_1
+            GE1/0/6                        99  GigabitEthernet0/0/0    bitb_G19U39_usg6680_mgr_1
+            GE1/0/10                      116  GigabitEthernet0/0/0    bitb_G20U29_usg6680_uds_1
+            GE1/0/11                       92  GigabitEthernet0/0/0    bitb_G20U33_usg6680_uds_2
+            GE1/0/12                       94  GigabitEthernet0/0/0    bitb_G20U37_usg6680_pod1_2
+            GE1/0/13                      116  GigabitEthernet0/0/0    bitb_G20U41_usg6680_om_
+            """
+        results = {}
+        command = 'display lldp neighbor brief'
+        output = self.device.send_command(command)
+        re_lldp = r"(?P<local>\S+)\s+\d+\s+(?P<port>\S+)\s+(?P<hostname>\S+)"
+        match = re.findall(re_lldp, output, re.M)
+        for neighbor in match:
+            local_iface = neighbor[0]
+            if local_iface not in results:
+                results[local_iface] = []
+
+            neighbor_dict = dict()
+            neighbor_dict['remote_port'] = py23_compat.text_type(neighbor[1])
+            neighbor_dict['remote_system_name'] = py23_compat.text_type(neighbor[2])
             results[local_iface].append(neighbor_dict)
         return results
 
