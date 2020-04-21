@@ -741,42 +741,42 @@ class CEDriver(NetworkDriver):
         return results
 
 
-        def get_lldp_neighbors_details(self):
-            """
-            Return LLDP neighbors details.
+    def get_lldp_neighbors_details(self):
+        """
+        Return LLDP neighbors details.
 
-            Sample output:
-            Local Interface         Exptime(s) Neighbor Interface      Neighbor Device
-            -------------------------------------------------------------------------------
-            10GE1/0/1                     117  GigabitEthernet4/0/9    bitb_G20U41_usg6680_om_1
-            10GE1/0/2                      92  10GE1/0/1               bitb_G22U39_ce5850_manage_2
-            10GE1/0/3                     117  10GE1/0/48              bitb_G19U42_CE6851_bmccore_1
-            10GE1/0/4                      94  10GE1/0/15              tb-bier00d08u36nwswdwdm-1
-            GE1/0/2                       118  GigabitEthernet0/0/0    bitb_G19U23_usg6670_vpn_1
-            GE1/0/3                       117  GigabitEthernet0/0/0    bitb_G19U27_usg6680_nat_1
-            GE1/0/4                       102  GigabitEthernet0/0/0    bitb_G19U31_usg6680_pod1_1
-            GE1/0/5                       113  GigabitEthernet0/0/0    bitb_G19U35_usg6680_dmz_1
-            GE1/0/6                        99  GigabitEthernet0/0/0    bitb_G19U39_usg6680_mgr_1
-            GE1/0/10                      116  GigabitEthernet0/0/0    bitb_G20U29_usg6680_uds_1
-            GE1/0/11                       92  GigabitEthernet0/0/0    bitb_G20U33_usg6680_uds_2
-            GE1/0/12                       94  GigabitEthernet0/0/0    bitb_G20U37_usg6680_pod1_2
-            GE1/0/13                      116  GigabitEthernet0/0/0    bitb_G20U41_usg6680_om_
-            """
-        results = {}
-        command = 'display lldp neighbor brief'
-        output = self.device.send_command(command)
-        re_lldp = r"(?P<local>\S+)\s+\d+\s+(?P<port>\S+)\s+(?P<hostname>\S+)"
-        match = re.findall(re_lldp, output, re.M)
-        for neighbor in match:
-            local_iface = neighbor[0]
-            if local_iface not in results:
-                results[local_iface] = []
+        Sample output:
+        Local Interface         Exptime(s) Neighbor Interface      Neighbor Device
+        -------------------------------------------------------------------------------
+        10GE1/0/1                     117  GigabitEthernet4/0/9    bitb_G20U41_usg6680_om_1
+        10GE1/0/2                      92  10GE1/0/1               bitb_G22U39_ce5850_manage_2
+        10GE1/0/3                     117  10GE1/0/48              bitb_G19U42_CE6851_bmccore_1
+        10GE1/0/4                      94  10GE1/0/15              tb-bier00d08u36nwswdwdm-1
+        GE1/0/2                       118  GigabitEthernet0/0/0    bitb_G19U23_usg6670_vpn_1
+        GE1/0/3                       117  GigabitEthernet0/0/0    bitb_G19U27_usg6680_nat_1
+        GE1/0/4                       102  GigabitEthernet0/0/0    bitb_G19U31_usg6680_pod1_1
+        GE1/0/5                       113  GigabitEthernet0/0/0    bitb_G19U35_usg6680_dmz_1
+        GE1/0/6                        99  GigabitEthernet0/0/0    bitb_G19U39_usg6680_mgr_1
+        GE1/0/10                      116  GigabitEthernet0/0/0    bitb_G20U29_usg6680_uds_1
+        GE1/0/11                       92  GigabitEthernet0/0/0    bitb_G20U33_usg6680_uds_2
+        GE1/0/12                       94  GigabitEthernet0/0/0    bitb_G20U37_usg6680_pod1_2
+        GE1/0/13                      116  GigabitEthernet0/0/0    bitb_G20U41_usg6680_om_
+        """
+    results = {}
+    command = 'display lldp neighbor brief'
+    output = self.device.send_command(command)
+    re_lldp = r"(?P<local>\S+)\s+\d+\s+(?P<port>\S+)\s+(?P<hostname>\S+)"
+    match = re.findall(re_lldp, output, re.M)
+    for neighbor in match:
+        local_iface = neighbor[0]
+        if local_iface not in results:
+            results[local_iface] = []
 
-            neighbor_dict = dict()
-            neighbor_dict['remote_port'] = py23_compat.text_type(neighbor[1])
-            neighbor_dict['remote_system_name'] = py23_compat.text_type(neighbor[2])
-            results[local_iface].append(neighbor_dict)
-        return results
+        neighbor_dict = dict()
+        neighbor_dict['remote_port'] = py23_compat.text_type(neighbor[1])
+        neighbor_dict['remote_system_name'] = py23_compat.text_type(neighbor[2])
+        results[local_iface].append(neighbor_dict)
+    return results
 
     def get_mac_address_table(self):
         """
